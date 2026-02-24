@@ -177,3 +177,37 @@ func (a *applicationDependencies) updateCustomerHandler(
 		return
 	}
 }
+
+func (a *applicationDependencies) deleteCustomerHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	//  Get the ID from the URL
+	id, err := a.readIDParam(r)
+	if err != nil {
+		a.notFoundResponse(w, r)
+		return
+	}
+
+	//  Delete the customer
+	err = a.customerModel.Delete(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			a.notFoundResponse(w, r)
+		default:
+			a.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	//  Return a success message
+	data := envelope{
+		"message": "customer successfully deleted",
+	}
+
+	err = a.writeJSON(w, http.StatusOK, data, nil)
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+	}
+}

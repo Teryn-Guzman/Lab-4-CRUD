@@ -129,6 +129,41 @@ func (m CustomerModel) Update(customer *Customer) error {
 
 	return nil
 }
+func (m CustomerModel) Delete(id int64) error {
+	//  Check if the ID is valid
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+
+	//  SQL query to delete a customer by ID
+	query := `
+		DELETE FROM customers
+		WHERE customer_id = $1
+	`
+
+	//  Create a context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Execute the delete query
+	result, err := m.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	// Check how many rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// If no rows were deleted, the ID probably doesn't exist
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
+}
 
 func ValidateCustomer(v *validator.Validator, c *Customer) {
 
