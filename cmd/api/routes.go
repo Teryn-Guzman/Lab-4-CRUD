@@ -14,7 +14,7 @@ func (a *applicationDependencies)routes() http.Handler  {
   // handle 405
    router.MethodNotAllowed = http.HandlerFunc(a.methodNotAllowedResponse)
    // setup routes
-   router.HandlerFunc(http.MethodPost, "/v1/reservations", a.createReservationHandler)
+   router.HandlerFunc(http.MethodPost, "/v1/customers", a.createCustomerHandler)
 
    return router
   

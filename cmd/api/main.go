@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Teryn-Guzman/Lab-3/internal/data"
 	_ "github.com/lib/pq"
 )
 const appVersion = "1.0.0"
@@ -26,6 +27,7 @@ type serverConfig struct {
 type applicationDependencies struct {
     config serverConfig
     logger *slog.Logger
+    customerModel data.CustomerModel
 }
 func main() {
     var settings serverConfig
@@ -53,6 +55,7 @@ func main() {
     appInstance := &applicationDependencies {
         config: settings,
         logger: logger,
+        customerModel: data.CustomerModel{DB: db},
     }
 
 
