@@ -215,14 +215,39 @@ func (a *applicationDependencies) listCustomersHandler(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	// Retrieve all customers from the database
-	customers, err := a.customerModel.GetAll()
+	// Create a struct to hold the query parameters
+	var queryParametersData struct {
+		FirstName string
+		LastName  string
+	}
+
+	// Get the query parameters from the URL
+	queryParameters := r.URL.Query()
+
+	// Load the query parameters into our struct with defaults
+	queryParametersData.FirstName = a.getSingleQueryParameter(
+		queryParameters,
+		"first_name",
+		"",
+	)
+
+	queryParametersData.LastName = a.getSingleQueryParameter(
+		queryParameters,
+		"last_name",
+		"",
+	)
+
+	//  Call the model's GetAll with optional filters
+	customers, err := a.customerModel.GetAll(
+		queryParametersData.FirstName,
+		queryParametersData.LastName,
+	)
 	if err != nil {
 		a.serverErrorResponse(w, r, err)
 		return
 	}
 
-	//  Wrap the customers in an envelope and return JSON
+	//  Wrap the results in an envelope and return JSON
 	data := envelope{
 		"customers": customers,
 	}

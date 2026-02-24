@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/Teryn-Guzman/Lab-3/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -103,4 +105,54 @@ params := httprouter.ParamsFromContext(r.Context())
     }
 
     return id, nil
+}
+
+// Get a single query parameter value or return the default if missing
+func (a *applicationDependencies) getSingleQueryParameter(
+	queryParameters url.Values,
+	key string,
+	defaultValue string,
+) string {
+	result := queryParameters.Get(key)
+	if result == "" {
+		return defaultValue
+	}
+	return result
+}
+
+// Get multiple comma-separated query parameter values
+// Returns the default slice if the parameter is missing
+func (a *applicationDependencies) getMultipleQueryParameters(
+	queryParameters url.Values,
+	key string,
+	defaultValue []string,
+) []string {
+	result := queryParameters.Get(key)
+	if result == "" {
+		return defaultValue
+	}
+	return strings.Split(result, ",")
+}
+
+// Get a single integer query parameter value
+// Adds a validation error if the conversion fails
+func (a *applicationDependencies) getSingleIntegerParameter(
+	queryParameters url.Values,
+	key string,
+	defaultValue int,
+	v *validator.Validator,
+) int {
+	result := queryParameters.Get(key)
+	if result == "" {
+		return defaultValue
+	}
+
+	// Attempt to convert the string to an integer
+	intValue, err := strconv.Atoi(result)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+
+	return intValue
 }

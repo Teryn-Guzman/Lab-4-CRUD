@@ -178,30 +178,32 @@ func ValidateCustomer(v *validator.Validator, c *Customer) {
 	}
 }
 
-func (m CustomerModel) GetAll() ([]*Customer, error) {
-	// SQL query to get all customers
+func (m CustomerModel) GetAll(firstName string, lastName string) ([]*Customer, error) {
+	// SQL query to get all customers with optional filtering by first_name and last_name
 	query := `
 		SELECT customer_id, first_name, last_name, email, phone,
 		       created_at, no_show_count, penalty_flag
 		FROM customers
+		WHERE ($1 = '' OR first_name ILIKE '%' || $1 || '%')
+		  AND ($2 = '' OR last_name ILIKE '%' || $2 || '%')
 		ORDER BY customer_id
 	`
 
-	//  Create a context with timeout
+	// Create a context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	//  Execute the query
-	rows, err := m.DB.QueryContext(ctx, query)
+	// Execute the query
+	rows, err := m.DB.QueryContext(ctx, query, firstName, lastName)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	//  Prepare slice to store customers
+	// Prepare slice to store customers
 	customers := []*Customer{}
 
-	//  Iterate over rows
+	// Iterate over rows
 	for rows.Next() {
 		var c Customer
 		err := rows.Scan(
@@ -220,11 +222,11 @@ func (m CustomerModel) GetAll() ([]*Customer, error) {
 		customers = append(customers, &c)
 	}
 
-	//  Check for errors during iteration
+	// Check for errors during iteration
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
-	//  Return the list of customers
+	// Return the list of customers
 	return customers, nil
 }
