@@ -87,3 +87,93 @@ func (a *applicationDependencies) displayCustomerHandler(
 		a.serverErrorResponse(w, r, err)
 	}
 }
+func (a *applicationDependencies) updateCustomerHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	// Get the ID from the URL
+	id, err := a.readIDParam(r)
+	if err != nil {
+		a.notFoundResponse(w, r)
+		return
+	}
+
+	// Fetch the existing customer
+	customer, err := a.customerModel.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			a.notFoundResponse(w, r)
+		default:
+			a.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// Decode incoming JSON into a temporary struct
+	var input struct {
+		FirstName   *string `json:"first_name"`
+		LastName    *string `json:"last_name"`
+		Email       *string `json:"email"`
+		Phone       *string `json:"phone"`
+		NoShowCount *int    `json:"no_show_count"`
+		PenaltyFlag *bool   `json:"penalty_flag"`
+	}
+
+	err = a.readJSON(w, r, &input)
+	if err != nil {
+		a.badRequestResponse(w, r, err)
+		return
+	}
+
+	//  Update only the fields provided
+	if input.FirstName != nil {
+		customer.FirstName = *input.FirstName
+	}
+	if input.LastName != nil {
+		customer.LastName = *input.LastName
+	}
+	if input.Email != nil {
+		customer.Email = *input.Email
+	}
+	if input.Phone != nil {
+		customer.Phone = *input.Phone
+	}
+	if input.NoShowCount != nil {
+		customer.NoShowCount = *input.NoShowCount
+	}
+	if input.PenaltyFlag != nil {
+		customer.PenaltyFlag = *input.PenaltyFlag
+	}
+
+	//  Validate the updated customer
+	v := validator.New()
+	data.ValidateCustomer(v, customer)
+	if !v.IsEmpty() {
+		a.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	//  Save the updates to the database
+	err = a.customerModel.Update(customer)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			a.notFoundResponse(w, r)
+		default:
+			a.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	//  Return the updated customer
+	dataEnvelope := envelope{
+		"customer": customer,
+	}
+
+	err = a.writeJSON(w, http.StatusOK, dataEnvelope, nil)
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+		return
+	}
+}

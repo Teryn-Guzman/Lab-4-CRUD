@@ -90,6 +90,46 @@ func (m CustomerModel) Get(id int64) (*Customer, error) {
 	return &customer, nil
 }
 
+func (m CustomerModel) Update(customer *Customer) error {
+	query := `
+		UPDATE customers
+		SET first_name = $1,
+		    last_name = $2,
+		    email = $3,
+		    phone = $4,
+		    no_show_count = $5,
+		    penalty_flag = $6
+		WHERE customer_id = $7
+		RETURNING customer_id
+	`
+
+	args := []any{
+		customer.FirstName,
+		customer.LastName,
+		customer.Email,
+		customer.Phone,
+		customer.NoShowCount,
+		customer.PenaltyFlag,
+		customer.ID,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var id int64
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&id)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrRecordNotFound
+		default:
+			return err
+		}
+	}
+
+	return nil
+}
+
 func ValidateCustomer(v *validator.Validator, c *Customer) {
 
 	v.Check(c.FirstName != "", "first_name", "must be provided")

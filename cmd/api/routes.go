@@ -16,6 +16,8 @@ func (a *applicationDependencies)routes() http.Handler  {
    // setup routes
    router.HandlerFunc(http.MethodPost, "/v1/customers", a.createCustomerHandler)
    router.HandlerFunc(http.MethodGet, "/v1/customers/:id", a.displayCustomerHandler)
+   router.HandlerFunc(http.MethodPatch,"/v1/customers/:id", a.updateCustomerHandler)
+
 
    return router
   
